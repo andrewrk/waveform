@@ -1,3 +1,16 @@
+Usage:
+
+    waveform [options]
+
+    Available options with their defaults:
+    --in audiofile              (required)
+    --out pngfile               (required)
+    --width 256                 height of the image
+    --width 64                  width of the image
+    --color-bg 00000000         bg color, rrggbbaa
+    --color-center 000000ff     gradient center color, rrggbbaa
+    --color-outer 000000ff      gradient outer color, rrggbbaa
+
 Dependencies:
 
     libsndfile
@@ -8,6 +21,3 @@ Compile:
 
     gcc -o waveform main.c -lsndfile -lz -lpng
 
-Run:
-
-    waveform audio waveform.png
