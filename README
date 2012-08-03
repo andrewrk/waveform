@@ -1,0 +1,13 @@
+Dependencies:
+
+    libsndfile
+    libpng
+    zlib
+
+Compile:
+
+    gcc -o waveform main.c -lsndfile -lz -lpng
+
+Run:
+
+    waveform audio waveform.png
