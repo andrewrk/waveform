@@ -200,22 +200,33 @@ int main(int argc, char * argv[]) {
         }
         // translate into y pixel coord. Use the left channel for the bottom
         // and the right channel for the top
-        int left_pix_y = center_y - (left_max - sample_min) * center_y / sample_range;
-        int right_pix_y = center_y + (right_max - sample_min) * center_y / sample_range;
+        float left_amt = (left_max - sample_min) / (float) sample_range;
+        float right_amt = (right_max - sample_min) / (float) sample_range;
+
+        int left_pix_y = center_y + left_amt * center_y;
+        int right_pix_y = center_y - right_amt * center_y;
 
         int y = 0;
         int four_x = 4 * x;
         // top bg 
-        for (; y < left_pix_y; ++y) {
+        for (; y < right_pix_y; ++y) {
             memcpy(row_pointers[y] + four_x, color_bg, 4);
         }
         // top wave
         for (; y <= center_y; ++y) {
-            memcpy(row_pointers[y] + four_x, color_outer, 4);
+            float amt = y / (float) center_y;
+            int i;
+            for (i = 0; i < 4; ++i) {
+                row_pointers[y][four_x+i] = (1-amt) * color_outer[i] + amt * color_center[i];
+            }
         }
         // bottom wave
-        for (; y <= right_pix_y; ++y) {
-            memcpy(row_pointers[y] + four_x, color_outer, 4);
+        for (; y <= left_pix_y; ++y) {
+            float amt = (y - center_y) / (float) center_y;
+            int i;
+            for (i = 0; i < 4; ++i) {
+                row_pointers[y][four_x+i] = amt * color_outer[i] + (1-amt) * color_center[i];
+            }
         }
         // bottom bg
         for (; y < image_height; ++y) {
@@ -232,4 +243,3 @@ int main(int argc, char * argv[]) {
     // let the OS free up the memory that we allocated
     return 0;
 }
-
