@@ -27,10 +27,11 @@ Node.js Usage:
 Dependencies:
 
     libsndfile
+    libmpg123
     libpng
     zlib
 
 Compile:
 
-    gcc -o waveform main.c -O3 -lsndfile -lz -lpng
+    gcc -o waveform main.c -O3 -lsndfile -lmpg123 -lz -lpng
 

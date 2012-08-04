@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sndfile.h>
+#include <mpg123.h>
 #include <png.h>
 #include <limits.h>
 
@@ -91,17 +92,57 @@ int main(int argc, char * argv[]) {
         return printUsage(exe);
     }
 
+    // try libsndfile, then libmpg123, then give up
+    const int LIB_SNDFILE = 0;
+    const int LIB_MPG123 = 1;
+    int lib_to_use = LIB_SNDFILE;
+
+    int frame_count = -1;
+    int channel_count = -1;
+    int frame_size = -1;
+
+    // libsndfile variables
     SF_INFO sf_info;
 
+    // mpg123 variables
+    mpg123_handle * mh = NULL;
+
+    // try libsndfile
     SNDFILE * sndfile = sf_open(in_file_path, SFM_READ, &sf_info);
 
-    if (! sndfile) {
-        fprintf(stderr, "sndfile does not recognize the input file: %s\n", in_file_path);
-        return 1;
+    if (sndfile) {
+        // sndfile can handle the file
+        frame_count = sf_info.frames;
+        channel_count = sf_info.channels;
+    } else {
+        // sndfile no good. let's try mpg123.
+        int err = mpg123_init();
+        int encoding = 0;
+        long rate = 0;
+        if (err != MPG123_OK || (mh = mpg123_new(NULL, &err)) == NULL
+            // let mpg123 work with the file, that excludes MPG123_NEED_MORE
+            // messages.
+            || mpg123_open(mh, in_file_path) != MPG123_OK
+            // peek into the track and get first output format.
+            || mpg123_getformat(mh, &rate, &channel_count, &encoding) != MPG123_OK)
+        {
+            fprintf(stderr, "Unrecognized audio format for input file: %s\n", in_file_path);
+            return 1;
+        }
+
+        mpg123_format_none(mh);
+        mpg123_format(mh, rate, channel_count, encoding);
+
+        // mpg123 can handle the file
+        lib_to_use = LIB_MPG123;
+        mpg123_scan(mh);
+        int sample_size = 2;
+        frame_size = sample_size * channel_count;
+        int sample_count = mpg123_length(mh);
+        frame_count = sample_count / channel_count;
     }
 
-    sf_count_t frame_count = sf_info.frames;
-    int channel_count = sf_info.channels;
+
     int sample_min = SHRT_MIN;
     int sample_max = SHRT_MAX;
     int sample_range = sample_max - sample_min;
@@ -192,8 +233,14 @@ int main(int argc, char * argv[]) {
         int min = sample_max;
         int max = sample_min;
 
-        sf_seek(sndfile, start, SEEK_SET);
-        sf_readf_short(sndfile, frames, frames_to_see);
+        if (lib_to_use == LIB_SNDFILE) {
+            sf_seek(sndfile, start, SEEK_SET);
+            sf_readf_short(sndfile, frames, frames_to_see);
+        } else if (lib_to_use == LIB_MPG123) {
+            size_t done;
+            mpg123_seek(mh, start * channel_count, SEEK_SET);
+            mpg123_read(mh, (unsigned char *) frames, frames_to_see * frame_size, &done);
+        }
 
         // for each frame from start to end
         int i;
@@ -232,9 +279,15 @@ int main(int argc, char * argv[]) {
 
     png_write_image(png, row_pointers);
     png_write_end(png, png_info);
-
-    sf_close(sndfile);
     fclose(png_file);
+
+    if (lib_to_use == LIB_SNDFILE) {
+        sf_close(sndfile);
+    } else if (lib_to_use == LIB_MPG123) {
+        mpg123_close(mh);
+        mpg123_delete(mh);
+        mpg123_exit();
+    }
 
     // let the OS free up the memory that we allocated
     return 0;

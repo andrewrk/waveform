@@ -5,7 +5,7 @@
   "main": "./index",
   "bin": "./bin/waveform",
   "scripts": {
-    "preinstall": "mkdir -p ./bin && gcc -o ./bin/waveform main.c -O3 -lsndfile -lz -lpng"
+    "preinstall": "mkdir -p ./bin && gcc -o ./bin/waveform main.c -O3 -lsndfile -lmpg123 -lz -lpng"
   },
   "repository": {
     "type": "git",
