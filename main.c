@@ -36,7 +36,7 @@ int main(int argc, char * argv[]) {
     char * exe = argv[0];
     long image_width = 256;
     long image_height = 64;
-    int quality = 10;
+    int quality = 100;
 
     char * in_file_path = NULL;
     char * out_file_path = NULL;
