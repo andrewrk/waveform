@@ -188,6 +188,7 @@ int main(int argc, char * argv[]) {
     // for each pixel
     int image_bound_y = image_height - 1;
     int x;
+    float channel_count_mult = 1 / (float)channel_count;
     for (x = 0; x < image_width; ++x) {
         // range of frames that fit in this pixel
         int start = x * frames_per_pixel;
@@ -206,9 +207,8 @@ int main(int argc, char * argv[]) {
             int value = 0;
             int c;
             for (c = 0; c < channel_count; ++c) {
-                value += frames[i+c];
+                value += frames[i+c] * channel_count_mult;
             }
-            value /= channel_count;
 
             // keep track of max/min
             if (value < min) min = value;
