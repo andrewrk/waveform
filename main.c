@@ -20,6 +20,7 @@ Usage:\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
+    --quality 10                integer 1-10 choose between speed and quality\n\
 \n\
 ");
     return 1;
@@ -37,6 +38,7 @@ int main(int argc, char * argv[]) {
     char * exe = argv[0];
     long image_width = 256;
     long image_height = 64;
+    int quality = 10;
 
     char * in_file_path = NULL;
     char * out_file_path = NULL;
@@ -70,6 +72,12 @@ int main(int argc, char * argv[]) {
             parseColor(argv[++i], color_center);
         } else if (strcmp(arg_name, "color-outer") == 0) {
             parseColor(argv[++i], color_outer);
+        } else if (strcmp(arg_name, "quality") == 0) {
+            quality = atoi(argv[++i]);
+            if (quality < 1 || quality > 10) {
+                fprintf(stderr, "quality must be an integer between 1 and 10\n");
+                return printUsage(exe);
+            }
         } else {
             fprintf(stderr, "Unrecognized argument: %s\n", arg_name);
             return printUsage(exe);
@@ -132,7 +140,7 @@ int main(int argc, char * argv[]) {
     png_write_info(png, png_info);
 
     int frames_per_pixel = frame_count / image_width;
-    int frames_to_see = frames_per_pixel;
+    int frames_to_see = frames_per_pixel * quality / 10;
     int frames_times_channels = frames_to_see * channel_count;
 
     // allocate memory to read from library
@@ -168,7 +176,6 @@ int main(int argc, char * argv[]) {
     int center_y = image_height / 2;
 
     // for each pixel
-    int image_bound_y = image_height - 1;
     int x;
     for (x = 0; x < image_width; ++x) {
         // range of frames that fit in this pixel
