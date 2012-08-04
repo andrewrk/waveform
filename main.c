@@ -104,6 +104,7 @@ int main(int argc, char * argv[]) {
     int sample_max = SHRT_MAX;
     int sample_range = sample_max - sample_min;
 
+    int center_y = image_height / 2;
 
     if (channel_count != 2) {
         fprintf(stderr, "Only stereo audio is supported. Input audio has %i channels.\n",
@@ -158,6 +159,13 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
+    png_bytep color_at_pix = (png_bytep) malloc(sizeof(png_byte) * image_height * 4);
+
+    if (! color_at_pix) {
+        fprintf(stderr, "Out of memory.");
+        return 1;
+    }
+
     int y;
     for (y = 0; y < image_height; ++y) {
         png_bytep row = (png_bytep) malloc(image_width * 4);
@@ -171,9 +179,14 @@ int main(int argc, char * argv[]) {
             memcpy(row + x*4, color_bg, 4);
         }
         row_pointers[y] = row;
-    }
 
-    int center_y = image_height / 2;
+        // compute the foreground color at each y pixel
+        int i;
+        for (i = 0; i < 4; ++i) {
+            float amt = abs(y - center_y) / (float) center_y;
+            color_at_pix[4*y + i] = (1-amt) * color_center[i] + amt * color_outer[i];
+        }
+    }
 
     // for each pixel
     int x;
@@ -210,21 +223,9 @@ int main(int argc, char * argv[]) {
         for (; y < right_pix_y; ++y) {
             memcpy(row_pointers[y] + four_x, color_bg, 4);
         }
-        // top wave
-        for (; y <= center_y; ++y) {
-            float amt = y / (float) center_y;
-            int i;
-            for (i = 0; i < 4; ++i) {
-                row_pointers[y][four_x+i] = (1-amt) * color_outer[i] + amt * color_center[i];
-            }
-        }
-        // bottom wave
+        // top and bottom wave
         for (; y <= left_pix_y; ++y) {
-            float amt = (y - center_y) / (float) center_y;
-            int i;
-            for (i = 0; i < 4; ++i) {
-                row_pointers[y][four_x+i] = amt * color_outer[i] + (1-amt) * color_center[i];
-            }
+            memcpy(row_pointers[y] + four_x, color_at_pix + 4*y, 4);
         }
         // bottom bg
         for (; y < image_height; ++y) {
