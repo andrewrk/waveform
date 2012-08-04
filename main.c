@@ -170,11 +170,6 @@ int main(int argc, char * argv[]) {
             fprintf(stderr, "Out of memory.");
             return 1;
         }
-        // set each pixel initially to the bg color
-        int x;
-        for (x = 0; x < image_width; ++x) {
-            memcpy(row + x*4, color_bg, 4);
-        }
         row_pointers[y] = row;
 
         // compute the foreground color at each y pixel
