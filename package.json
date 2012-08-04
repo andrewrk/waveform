@@ -1,0 +1,20 @@
+{
+  "name": "waveform",
+  "version": "0.0.0",
+  "description": "fast waveform generation",
+  "main": "./index",
+  "bin": "./bin/waveform",
+  "scripts": {
+    "preinstall": "mkdir -p ./bin && gcc -o ./bin/waveform main.c -O3 -lsndfile -lz -lpng"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/superjoe30/waveform.git"
+  },
+  "keywords": [
+    "fast",
+    "waveform"
+  ],
+  "author": "Andrew Kelley",
+  "license": "BSD"
+}

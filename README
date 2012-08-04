@@ -1,14 +1,28 @@
-Usage:
+Command Line Usage:
 
     waveform [options] audiofile pngfile
 
     Available options with their defaults:
-    --width 256                 height of the image
-    --width 64                  width of the image
+    --width 256                 width of the image
+    --height 64                 height of the image
     --color-bg 00000000         bg color, rrggbbaa
     --color-center 000000ff     gradient center color, rrggbbaa
     --color-outer 000000ff      gradient outer color, rrggbbaa
     --quality 100               integer 1-100 choose between speed and quality
+
+Node.js Usage:
+
+    var generateWaveform = require('waveform');
+    generateWaveform(audiofile, pngfile, {
+        width: 256,                // width of the image
+        height: 64,                // height of the image
+        'color-bg': '00000000',    // bg color, rrggbbaa
+        'color-center': '000000ff',// gradient center color, rrggbbaa
+        'color-outer': '000000ff', // gradient outer color, rrggbbaa
+        quality: 100,              // integer 1-100 choose between speed and quality
+    }, function(err) {
+        // done generating waveform
+    });
 
 Dependencies:
 

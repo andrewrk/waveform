@@ -13,8 +13,8 @@ Usage:\n\
     waveform [options] audiofile pngfile\n\
 \n\
     Available options with their defaults:\n\
-    --width 256                 height of the image\n\
-    --width 64                  width of the image\n\
+    --width 256                 width of the image\n\
+    --height 64                 height of the image\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
