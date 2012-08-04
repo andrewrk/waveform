@@ -108,12 +108,6 @@ int main(int argc, char * argv[]) {
 
     int center_y = image_height / 2;
 
-    if (channel_count != 2) {
-        fprintf(stderr, "Only stereo audio is supported. Input audio has %i channels.\n",
-            channel_count);
-        return 1;
-    }
-
     FILE * png_file = fopen(out_file_path, "wb");
     if (!png_file) {
         fprintf(stderr, "Unable to open %s for writing\n", out_file_path);
@@ -192,14 +186,15 @@ int main(int argc, char * argv[]) {
     }
 
     // for each pixel
+    int image_bound_y = image_height - 1;
     int x;
     for (x = 0; x < image_width; ++x) {
         // range of frames that fit in this pixel
         int start = x * frames_per_pixel;
 
         // get the min and max of this range
-        int left_max = sample_min;
-        int right_max = sample_min;
+        int min = sample_max;
+        int max = sample_min;
 
         sf_seek(sndfile, start, SEEK_SET);
         sf_readf_short(sndfile, frames, frames_to_see);
@@ -207,27 +202,31 @@ int main(int argc, char * argv[]) {
         // for each frame from start to end
         int i;
         for (i = 0; i < frames_times_channels; i += channel_count) {
-            // left
-            int value = frames[i+0];
-            if (value > left_max) left_max = value;
-            // right
-            value = frames[i+1];
-            if (value > right_max) right_max = value;
+            // average the channels
+            int value = 0;
+            int c;
+            for (c = 0; c < channel_count; ++c) {
+                value += frames[i+c];
+            }
+            value /= channel_count;
+
+            // keep track of max/min
+            if (value < min) min = value;
+            if (value > max) max = value;
         }
-        // translate into y pixel coord. Use the left channel for the bottom
-        // and the right channel for the top
-        int left_pix_y = center_y + (left_max - sample_min) * center_y / sample_range;
-        int right_pix_y = center_y - (right_max - sample_min) * center_y / sample_range;
+        // translate into y pixel coord.
+        int y_min = (min - sample_min) * image_bound_y / sample_range;
+        int y_max = (max - sample_min) * image_bound_y / sample_range;
 
         int y = 0;
         int four_x = 4 * x;
 
         // top bg 
-        for (; y < right_pix_y; ++y) {
+        for (; y < y_min; ++y) {
             memcpy(row_pointers[y] + four_x, color_bg, 4);
         }
         // top and bottom wave
-        for (; y <= left_pix_y; ++y) {
+        for (; y <= y_max; ++y) {
             memcpy(row_pointers[y] + four_x, color_at_pix + 4*y, 4);
         }
         // bottom bg
