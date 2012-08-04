@@ -99,7 +99,6 @@ int main(int argc, char * argv[]) {
 
     int frame_count = -1;
     int channel_count = -1;
-    int frame_size = -1;
 
     // libsndfile variables
     SF_INFO sf_info;
@@ -136,8 +135,6 @@ int main(int argc, char * argv[]) {
         // mpg123 can handle the file
         lib_to_use = LIB_MPG123;
         mpg123_scan(mh);
-        int sample_size = 2;
-        frame_size = sample_size * channel_count;
         int sample_count = mpg123_length(mh);
         frame_count = sample_count / channel_count;
     }
@@ -182,7 +179,8 @@ int main(int argc, char * argv[]) {
     int frames_times_channels = frames_to_see * channel_count;
 
     // allocate memory to read from library
-    short * frames = (short *) malloc(sizeof(short) * channel_count * frames_to_see);
+    size_t frames_size = sizeof(short) * channel_count * frames_to_see;
+    short * frames = (short *) malloc(frames_size);
     if (! frames) {
         fprintf(stderr, "Out of memory.");
         return 1;
@@ -225,10 +223,12 @@ int main(int argc, char * argv[]) {
     int image_bound_y = image_height - 1;
     int x;
     float channel_count_mult = 1 / (float)channel_count;
-    for (x = 0; x < image_width; ++x) {
-        // range of frames that fit in this pixel
-        int start = x * frames_per_pixel;
-
+    size_t trash;
+    // range of frames that fit in this pixel
+    int start = 0;
+    int mstart = 0;
+    int mstart_delta = frames_per_pixel * channel_count;
+    for (x = 0; x < image_width; ++x, start += frames_per_pixel, mstart += mstart_delta) {
         // get the min and max of this range
         int min = sample_max;
         int max = sample_min;
@@ -237,9 +237,8 @@ int main(int argc, char * argv[]) {
             sf_seek(sndfile, start, SEEK_SET);
             sf_readf_short(sndfile, frames, frames_to_see);
         } else if (lib_to_use == LIB_MPG123) {
-            size_t done;
-            mpg123_seek(mh, start * channel_count, SEEK_SET);
-            mpg123_read(mh, (unsigned char *) frames, frames_to_see * frame_size, &done);
+            mpg123_seek(mh, mstart, SEEK_SET);
+            mpg123_read(mh, (unsigned char *) frames, frames_size, &trash);
         }
 
         // for each frame from start to end
