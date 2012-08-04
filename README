@@ -1,10 +1,8 @@
 Usage:
 
-    waveform [options]
+    waveform [options] audiofile pngfile
 
     Available options with their defaults:
-    --in audiofile              (required)
-    --out pngfile               (required)
     --width 256                 height of the image
     --width 64                  width of the image
     --color-bg 00000000         bg color, rrggbbaa
@@ -20,5 +18,5 @@ Dependencies:
 
 Compile:
 
-    gcc -o waveform main.c -lsndfile -lz -lpng
+    gcc -o waveform main.c -O3 -lsndfile -lz -lpng
 

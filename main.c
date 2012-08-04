@@ -10,11 +10,9 @@ int printUsage(const char * exe) {
 \n\
 Usage:\n\
 \n\
-    waveform [options]\n\
+    waveform [options] audiofile pngfile\n\
 \n\
     Available options with their defaults:\n\
-    --in audiofile              (required)\n\
-    --out pngfile               (required)\n\
     --width 256                 height of the image\n\
     --width 64                  width of the image\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
@@ -50,37 +48,41 @@ int main(int argc, char * argv[]) {
     // parse params
     int i;
     for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][1] != '-')
-            return printUsage(exe);
-
-        char * arg_name = argv[i] + 2;
-
-        // args that take 1 parameter
-        if (i + 1 >= argc)
-            return printUsage(exe);
-        if (strcmp(arg_name, "width") == 0) {
-            image_width = atol(argv[++i]);
-        } else if (strcmp(arg_name, "height") == 0) {
-            image_height = atol(argv[++i]);
-        } else if (strcmp(arg_name, "in") == 0) {
-            in_file_path = argv[++i];
-        } else if (strcmp(arg_name, "out") == 0) {
-            out_file_path = argv[++i];
-        } else if (strcmp(arg_name, "color-bg") == 0) {
-            parseColor(argv[++i], color_bg);
-        } else if (strcmp(arg_name, "color-center") == 0) {
-            parseColor(argv[++i], color_center);
-        } else if (strcmp(arg_name, "color-outer") == 0) {
-            parseColor(argv[++i], color_outer);
-        } else if (strcmp(arg_name, "quality") == 0) {
-            quality = atoi(argv[++i]);
-            if (quality < 1 || quality > 10) {
-                fprintf(stderr, "quality must be an integer between 1 and 10\n");
+        if (argv[i][0] != '-' || argv[i][1] != '-') {
+            if (! in_file_path) {
+                in_file_path = argv[i];
+            } else if (! out_file_path) {
+                out_file_path = argv[i];
+            } else {
+                fprintf(stderr, "don't know what to do with param: %s\n", argv[i]);
                 return printUsage(exe);
             }
         } else {
-            fprintf(stderr, "Unrecognized argument: %s\n", arg_name);
-            return printUsage(exe);
+            char * arg_name = argv[i] + 2;
+
+            // args that take 1 parameter
+            if (i + 1 >= argc)
+                return printUsage(exe);
+            if (strcmp(arg_name, "width") == 0) {
+                image_width = atol(argv[++i]);
+            } else if (strcmp(arg_name, "height") == 0) {
+                image_height = atol(argv[++i]);
+            } else if (strcmp(arg_name, "color-bg") == 0) {
+                parseColor(argv[++i], color_bg);
+            } else if (strcmp(arg_name, "color-center") == 0) {
+                parseColor(argv[++i], color_center);
+            } else if (strcmp(arg_name, "color-outer") == 0) {
+                parseColor(argv[++i], color_outer);
+            } else if (strcmp(arg_name, "quality") == 0) {
+                quality = atoi(argv[++i]);
+                if (quality < 1 || quality > 10) {
+                    fprintf(stderr, "quality must be an integer between 1 and 10\n");
+                    return printUsage(exe);
+                }
+            } else {
+                fprintf(stderr, "Unrecognized argument: %s\n", arg_name);
+                return printUsage(exe);
+            }
         }
     }
 
