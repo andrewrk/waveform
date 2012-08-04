@@ -169,6 +169,7 @@ int main(int argc, char * argv[]) {
     }
 
     int y;
+    float center_y_float = (float) center_y;
     for (y = 0; y < image_height; ++y) {
         png_bytep row = (png_bytep) malloc(image_width * 4);
         if (! row) {
@@ -185,7 +186,7 @@ int main(int argc, char * argv[]) {
         // compute the foreground color at each y pixel
         int i;
         for (i = 0; i < 4; ++i) {
-            float amt = abs(y - center_y) / (float) center_y;
+            float amt = abs(y - center_y) / center_y_float;
             color_at_pix[4*y + i] = (1-amt) * color_center[i] + amt * color_outer[i];
         }
     }
