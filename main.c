@@ -18,7 +18,7 @@ Usage:\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
-    --quality 10                integer 1-10 choose between speed and quality\n\
+    --quality 100               integer 1-100 choose between speed and quality\n\
 \n\
 ");
     return 1;
@@ -75,7 +75,7 @@ int main(int argc, char * argv[]) {
                 parseColor(argv[++i], color_outer);
             } else if (strcmp(arg_name, "quality") == 0) {
                 quality = atoi(argv[++i]);
-                if (quality < 1 || quality > 10) {
+                if (quality < 1 || quality > 100) {
                     fprintf(stderr, "quality must be an integer between 1 and 10\n");
                     return printUsage(exe);
                 }
@@ -143,7 +143,7 @@ int main(int argc, char * argv[]) {
     png_write_info(png, png_info);
 
     int frames_per_pixel = frame_count / image_width;
-    int frames_to_see = frames_per_pixel * quality / 10;
+    int frames_to_see = frames_per_pixel * quality / 100;
     int frames_times_channels = frames_to_see * channel_count;
 
     // allocate memory to read from library
