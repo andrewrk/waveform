@@ -19,9 +19,7 @@ module.exports = function(audiofile, pngfile, options, callback) {
   
   execFile(waveform_bin, cmdline, function(err, stdout, stderr) {
     if (err) {
-      callback(err);
-    } else if (stderr.length) {
-      callback(stderr);
+      callback({err: err, msg: stderr});
     } else {
       callback(null);
     }
