@@ -1,4 +1,6 @@
-var execFile, waveform_bin;
+var execFile, waveform_bin, path;
+
+path = require('path');
 
 execFile = require('child_process').execFile;
 waveform_bin = path.resolve(__dirname, "bin", "waveform");
