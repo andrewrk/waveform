@@ -1,11 +1,11 @@
 {
   "name": "waveform",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "fast waveform generation",
   "main": "./index",
   "bin": "./bin/waveform",
   "scripts": {
-    "preinstall": "mkdir -p ./bin && gcc -o ./bin/waveform main.c -O3 -lsndfile -lmpg123 -lz -lpng"
+    "preinstall": "mkdir -p ./bin && gcc -o ./bin/waveform main.c -O3 -lsox -lz -lpng"
   },
   "repository": {
     "type": "git",

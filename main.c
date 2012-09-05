@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sndfile.h>
-#include <mpg123.h>
+#include <sox.h>
 #include <png.h>
 #include <limits.h>
 
@@ -92,57 +91,15 @@ int main(int argc, char * argv[]) {
         return printUsage(exe);
     }
 
-    // try libsndfile, then libmpg123, then give up
-    const int LIB_SNDFILE = 0;
-    const int LIB_MPG123 = 1;
-    int lib_to_use = LIB_SNDFILE;
-
-    int frame_count = -1;
-    int channel_count = -1;
-
-    // libsndfile variables
-    SF_INFO sf_info;
-
-    // mpg123 variables
-    mpg123_handle * mh = NULL;
-
-    // try libsndfile
-    SNDFILE * sndfile = sf_open(in_file_path, SFM_READ, &sf_info);
-
-    if (sndfile) {
-        // sndfile can handle the file
-        frame_count = sf_info.frames;
-        channel_count = sf_info.channels;
-    } else {
-        // sndfile no good. let's try mpg123.
-        int err = mpg123_init();
-        int encoding = 0;
-        long rate = 0;
-        if (err != MPG123_OK || (mh = mpg123_new(NULL, &err)) == NULL
-            // let mpg123 work with the file, that excludes MPG123_NEED_MORE
-            // messages.
-            || mpg123_open(mh, in_file_path) != MPG123_OK
-            // peek into the track and get first output format.
-            || mpg123_getformat(mh, &rate, &channel_count, &encoding) != MPG123_OK)
-        {
-            fprintf(stderr, "Unrecognized audio format for input file: %s\n", in_file_path);
-            return 1;
-        }
-
-        mpg123_format_none(mh);
-        mpg123_format(mh, rate, channel_count, encoding);
-
-        // mpg123 can handle the file
-        lib_to_use = LIB_MPG123;
-        mpg123_scan(mh);
-        int sample_count = mpg123_length(mh);
-        frame_count = sample_count / channel_count;
+    sox_format_init();
+    sox_format_t * input = sox_open_read(in_file_path, NULL, NULL, NULL);
+    if (! input) {
+        fprintf(stderr, "Unrecognized audio format for input file: %s\n", in_file_path);
+        return 1;
     }
-
-
-    int sample_min = SHRT_MIN;
-    int sample_max = SHRT_MAX;
-    int sample_range = sample_max - sample_min;
+    int channel_count = input->signal.channels;
+    int frame_count = input->signal.length / channel_count;
+    long sample_range = (long) SOX_SAMPLE_MAX - (long) SOX_SAMPLE_MIN;
 
     int center_y = image_height / 2;
 
@@ -179,8 +136,8 @@ int main(int argc, char * argv[]) {
     int frames_times_channels = frames_to_see * channel_count;
 
     // allocate memory to read from library
-    size_t frames_size = sizeof(short) * channel_count * frames_to_see;
-    short * frames = (short *) malloc(frames_size);
+    size_t frames_size = sizeof(sox_sample_t) * channel_count * frames_to_see;
+    sox_sample_t * frames = (sox_sample_t *) malloc(frames_size);
     if (! frames) {
         fprintf(stderr, "Out of memory.");
         return 1;
@@ -230,22 +187,17 @@ int main(int argc, char * argv[]) {
     int mstart_delta = frames_per_pixel * channel_count;
     for (x = 0; x < image_width; ++x, start += frames_per_pixel, mstart += mstart_delta) {
         // get the min and max of this range
-        int min = sample_max;
-        int max = sample_min;
+        long min = SOX_SAMPLE_MAX;
+        long max = SOX_SAMPLE_MIN;
 
-        if (lib_to_use == LIB_SNDFILE) {
-            sf_seek(sndfile, start, SEEK_SET);
-            sf_readf_short(sndfile, frames, frames_to_see);
-        } else if (lib_to_use == LIB_MPG123) {
-            mpg123_seek(mh, mstart, SEEK_SET);
-            mpg123_read(mh, (unsigned char *) frames, frames_size, &trash);
-        }
+        sox_seek(input, mstart, SOX_SEEK_SET);
+        sox_read(input, frames, frames_to_see);
 
         // for each frame from start to end
         int i;
         for (i = 0; i < frames_times_channels; i += channel_count) {
             // average the channels
-            int value = 0;
+            long value = 0;
             int c;
             for (c = 0; c < channel_count; ++c) {
                 value += frames[i+c] * channel_count_mult;
@@ -256,8 +208,8 @@ int main(int argc, char * argv[]) {
             if (value > max) max = value;
         }
         // translate into y pixel coord.
-        int y_min = (min - sample_min) * image_bound_y / sample_range;
-        int y_max = (max - sample_min) * image_bound_y / sample_range;
+        int y_min = (min - SOX_SAMPLE_MIN) * image_bound_y / sample_range;
+        int y_max = (max - SOX_SAMPLE_MIN) * image_bound_y / sample_range;
 
         int y = 0;
         int four_x = 4 * x;
@@ -280,13 +232,8 @@ int main(int argc, char * argv[]) {
     png_write_end(png, png_info);
     fclose(png_file);
 
-    if (lib_to_use == LIB_SNDFILE) {
-        sf_close(sndfile);
-    } else if (lib_to_use == LIB_MPG123) {
-        mpg123_close(mh);
-        mpg123_delete(mh);
-        mpg123_exit();
-    }
+    sox_close(input);
+    sox_format_quit();
 
     // let the OS free up the memory that we allocated
     return 0;
