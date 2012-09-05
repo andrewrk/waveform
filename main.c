@@ -91,6 +91,33 @@ int main(int argc, char * argv[]) {
     }
     int channel_count = input->signal.channels;
     int frame_count = input->signal.length / channel_count;
+
+    // allocate memory to read from library
+    const int buffer_frame_count = 2048;
+    size_t frames_size = sizeof(sox_sample_t) * channel_count * buffer_frame_count;
+    sox_sample_t * frames = (sox_sample_t *) malloc(frames_size);
+    if (! frames) {
+        fprintf(stderr, "Out of memory.");
+        return 1;
+    }
+
+    if (frame_count == 0) {
+        // scan for the duration
+        sox_format_t * input2 = sox_open_read(in_file_path, NULL, NULL, NULL);
+        if (! input2) {
+            fprintf(stderr, "Had to open the file twice to scan duration, but it didn't work the second time.\n");
+            return 1;
+        }
+        size_t total = 0;
+        size_t count = buffer_frame_count;
+        while (count == buffer_frame_count) {
+            count = sox_read(input2, frames, buffer_frame_count);
+            frame_count += count;
+        }
+        sox_close(input2);
+        fprintf(stderr, "Warning: Had to scan for frame count. Found %i frames.\n", frame_count);
+    }
+
     long sample_range = (long) SOX_SAMPLE_MAX - (long) SOX_SAMPLE_MIN;
 
     int center_y = image_height / 2;
@@ -129,16 +156,8 @@ int main(int argc, char * argv[]) {
     png_write_info(png, png_info);
 
     int frames_per_pixel = frame_count / image_width;
-    const int buffer_frame_count = 2048;
     int frames_times_channels = frames_per_pixel * channel_count;
 
-    // allocate memory to read from library
-    size_t frames_size = sizeof(sox_sample_t) * channel_count * buffer_frame_count;
-    sox_sample_t * frames = (sox_sample_t *) malloc(frames_size);
-    if (! frames) {
-        fprintf(stderr, "Out of memory.");
-        return 1;
-    }
 
     // allocate memory to write to png file
     png_bytep * row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * image_height);
