@@ -18,7 +18,6 @@ Usage:\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
-    --quality 100               integer 1-100 choose between speed and quality\n\
 \n\
 ");
     return 1;
@@ -36,7 +35,6 @@ int main(int argc, char * argv[]) {
     char * exe = argv[0];
     long image_width = 256;
     long image_height = 64;
-    int quality = 100;
 
     char * in_file_path = NULL;
     char * out_file_path = NULL;
@@ -73,12 +71,6 @@ int main(int argc, char * argv[]) {
                 parseColor(argv[++i], color_center);
             } else if (strcmp(arg_name, "color-outer") == 0) {
                 parseColor(argv[++i], color_outer);
-            } else if (strcmp(arg_name, "quality") == 0) {
-                quality = atoi(argv[++i]);
-                if (quality < 1 || quality > 100) {
-                    fprintf(stderr, "quality must be an integer between 1 and 10\n");
-                    return printUsage(exe);
-                }
             } else {
                 fprintf(stderr, "Unrecognized argument: %s\n", arg_name);
                 return printUsage(exe);
@@ -137,11 +129,11 @@ int main(int argc, char * argv[]) {
     png_write_info(png, png_info);
 
     int frames_per_pixel = frame_count / image_width;
-    int frames_to_see = frames_per_pixel * quality / 100;
-    int frames_times_channels = frames_to_see * channel_count;
+    const int buffer_frame_count = 2048;
+    int frames_times_channels = frames_per_pixel * channel_count;
 
     // allocate memory to read from library
-    size_t frames_size = sizeof(sox_sample_t) * channel_count * frames_to_see;
+    size_t frames_size = sizeof(sox_sample_t) * channel_count * buffer_frame_count;
     sox_sample_t * frames = (sox_sample_t *) malloc(frames_size);
     if (! frames) {
         fprintf(stderr, "Out of memory.");
@@ -185,27 +177,26 @@ int main(int argc, char * argv[]) {
     int image_bound_y = image_height - 1;
     int x;
     float channel_count_mult = 1 / (float)channel_count;
-    size_t trash;
     // range of frames that fit in this pixel
-    int start = 0;
-    int mstart = 0;
-    int mstart_delta = frames_per_pixel * channel_count;
-    for (x = 0; x < image_width; ++x, start += frames_per_pixel, mstart += mstart_delta) {
+    int frame_index = buffer_frame_count;
+    for (x = 0; x < image_width; ++x) {
         // get the min and max of this range
         long min = SOX_SAMPLE_MAX;
         long max = SOX_SAMPLE_MIN;
 
-        sox_seek(input, mstart, SOX_SEEK_SET);
-        sox_read(input, frames, frames_to_see);
-
         // for each frame from start to end
         int i;
         for (i = 0; i < frames_times_channels; i += channel_count) {
+            if (++frame_index >= buffer_frame_count) {
+                sox_read(input, frames, buffer_frame_count);
+                frame_index = 0;
+            }
+
             // average the channels
             long value = 0;
             int c;
             for (c = 0; c < channel_count; ++c) {
-                value += frames[i+c] * channel_count_mult;
+                value += frames[frame_index + c] * channel_count_mult;
             }
 
             // keep track of max/min
