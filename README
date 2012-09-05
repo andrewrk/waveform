@@ -10,6 +10,8 @@ Command Line Usage:
     --color-outer 000000ff      gradient outer color, rrggbbaa
     --quality 100               integer 1-100 choose between speed and quality
 
+    Substitute '-' for a filename to use stdio.
+
 Node.js Usage:
 
     var generateWaveform = require('waveform');

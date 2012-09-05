@@ -103,10 +103,15 @@ int main(int argc, char * argv[]) {
 
     int center_y = image_height / 2;
 
-    FILE * png_file = fopen(out_file_path, "wb");
-    if (!png_file) {
-        fprintf(stderr, "Unable to open %s for writing\n", out_file_path);
-        return 1;
+    FILE * png_file;
+    if (strcmp(out_file_path, "-") == 0) {
+        png_file = stdout;
+    } else {
+        png_file = fopen(out_file_path, "wb");
+        if (!png_file) {
+            fprintf(stderr, "Unable to open %s for writing\n", out_file_path);
+            return 1;
+        }
     }
 
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
