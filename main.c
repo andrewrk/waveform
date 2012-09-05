@@ -19,6 +19,9 @@ Usage:\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
 \n\
+    Flags you can include:\n\
+    --scan                      don't rely on tags for duration\n\
+\n\
 ");
     return 1;
 }
@@ -42,6 +45,8 @@ int main(int argc, char * argv[]) {
     png_byte color_bg[4] = {0, 0, 0, 0};
     png_byte color_center[4] = {0, 0, 0, 255};
     png_byte color_outer[4] = {0, 0, 0, 255};
+
+    int scan = 0;
 
     // parse params
     int i;
@@ -71,6 +76,8 @@ int main(int argc, char * argv[]) {
                 parseColor(argv[++i], color_center);
             } else if (strcmp(arg_name, "color-outer") == 0) {
                 parseColor(argv[++i], color_outer);
+            } else if (strcmp(arg_name, "scan") == 0) {
+                scan = 1;
             } else {
                 fprintf(stderr, "Unrecognized argument: %s\n", arg_name);
                 return printUsage(exe);
@@ -90,7 +97,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     int channel_count = input->signal.channels;
-    int frame_count = input->signal.length / channel_count;
+    int frame_count = input->signal.length;
 
     // allocate memory to read from library
     const int buffer_frame_count = 2048;
@@ -102,6 +109,12 @@ int main(int argc, char * argv[]) {
     }
 
     if (frame_count == 0) {
+        // force a scan to get the duration
+        fprintf(stderr, "Warning: frame count missing from tags. Scanning to find duration.\n");
+        scan = 1;
+    }
+
+    if (scan) {
         // scan for the duration
         sox_format_t * input2 = sox_open_read(in_file_path, NULL, NULL, NULL);
         if (! input2) {
@@ -115,7 +128,6 @@ int main(int argc, char * argv[]) {
             frame_count += count;
         }
         sox_close(input2);
-        fprintf(stderr, "Warning: Had to scan for frame count. Found %i frames.\n", frame_count);
     }
 
     long sample_range = (long) SOX_SAMPLE_MAX - (long) SOX_SAMPLE_MIN;
