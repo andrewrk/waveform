@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
     int channel_count = input->signal.channels;
-    int frame_count = input->signal.length / channel_count;
+    int frame_count = input->signal.length;
 
     // allocate memory to read from library
     const int buffer_frame_count = 2048;
