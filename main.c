@@ -108,7 +108,6 @@ int main(int argc, char * argv[]) {
             fprintf(stderr, "Had to open the file twice to scan duration, but it didn't work the second time.\n");
             return 1;
         }
-        size_t total = 0;
         size_t count = buffer_frame_count;
         while (count == buffer_frame_count) {
             count = sox_read(input2, frames, buffer_frame_count);
