@@ -117,7 +117,7 @@ int main(int argc, char * argv[]) {
         fprintf(stderr, "Warning: Had to scan for frame count. Found %i frames.\n", frame_count);
     }
 
-    long sample_range = (long) SOX_SAMPLE_MAX - (long) SOX_SAMPLE_MIN;
+    long long sample_range = (long long) SOX_SAMPLE_MAX - (long long) SOX_SAMPLE_MIN;
 
     int center_y = image_height / 2;
 
@@ -199,8 +199,8 @@ int main(int argc, char * argv[]) {
     int frame_index = buffer_frame_count;
     for (x = 0; x < image_width; ++x) {
         // get the min and max of this range
-        long min = SOX_SAMPLE_MAX;
-        long max = SOX_SAMPLE_MIN;
+        long long min = SOX_SAMPLE_MAX;
+        long long max = SOX_SAMPLE_MIN;
 
         // for each frame from start to end
         int i;
@@ -211,7 +211,7 @@ int main(int argc, char * argv[]) {
             }
 
             // average the channels
-            long value = 0;
+            long long value = 0;
             int c;
             for (c = 0; c < channel_count; ++c) {
                 value += frames[frame_index + c] * channel_count_mult;
