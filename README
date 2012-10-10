@@ -20,7 +20,6 @@ Node.js Usage:
         'color-bg': '00000000',    // bg color, rrggbbaa
         'color-center': '000000ff',// gradient center color, rrggbbaa
         'color-outer': '000000ff', // gradient outer color, rrggbbaa
-        quality: 100,              // integer 1-100 choose between speed and quality
     }, function(err) {
         // done generating waveform
     });
