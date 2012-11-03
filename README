@@ -34,3 +34,14 @@ Compile:
 
     gcc -o waveform main.c -O3 -lsox -lz -lpng
 
+Compile on osx using macport:
+
+    install depedencies:
+
+        sudo port install sox
+        sudo port install libpng
+        sudo port install zlib
+
+    run compiler:
+
+        gcc -o waveform main.c -O3 -lsox -lz -lpng -I/opt/local/include -L/opt/local/lib
