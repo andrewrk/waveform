@@ -24,6 +24,9 @@ Node.js Usage:
         // done generating waveform
     });
 
+PHP Usage:
+https://github.com/polem/WaveformGenerator
+
 Dependencies:
 
     libsox
