@@ -1,6 +1,6 @@
 {
   "name": "waveform",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "fast waveform generation",
   "main": "./index",
   "bin": "./bin/waveform",
