@@ -18,8 +18,13 @@ module.exports = function(audiofile, pngfile, options, callback) {
   }
   
   execFile(waveform_bin, cmdline, function(err, stdout, stderr) {
+    var myErr;
     if (err) {
-      callback({internal: err, error: new Error(stderr)});
+      myErr = new Error("waveform binary returned error"); 
+      myErr.stdout = stdout;
+      myErr.stderr = stderr;
+      myErr.internal = err;
+      callback(myErr);
     } else {
       callback();
     }
