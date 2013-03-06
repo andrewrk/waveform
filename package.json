@@ -5,7 +5,7 @@
   "main": "./index",
   "bin": "./bin/waveform",
   "scripts": {
-    "postinstall": "mkdir -p bin && cp build/Release/waveform bin/waveform"
+    "postinstall": "mkdir -p bin && cp build/Release/waveform* bin/waveform"
   },
   "repository": {
     "type": "git",
