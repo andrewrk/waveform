@@ -28,7 +28,7 @@ generateWaveform(audiofile, pngfile, {
 }, function(err) {
     // done generating waveform
 });
-```js
+```
 
 ## PHP Usage:
 
