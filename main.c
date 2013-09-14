@@ -174,7 +174,7 @@ int main(int argc, char * argv[]) {
     }
 
     int y;
-    float center_y_float = (float) center_y;
+    double center_y_float = (double) center_y;
     for (y = 0; y < image_height; ++y) {
         png_bytep row = (png_bytep) malloc(image_width * 4);
         if (! row) {
@@ -186,7 +186,7 @@ int main(int argc, char * argv[]) {
         // compute the foreground color at each y pixel
         int i;
         for (i = 0; i < 4; ++i) {
-            float amt = abs(y - center_y) / center_y_float;
+            double amt = abs(y - center_y) / center_y_float;
             color_at_pix[4*y + i] = (1-amt) * color_center[i] + amt * color_outer[i];
         }
     }
@@ -194,7 +194,7 @@ int main(int argc, char * argv[]) {
     // for each pixel
     int image_bound_y = image_height - 1;
     int x;
-    float channel_count_mult = 1 / (float)channel_count;
+    double channel_count_mult = 1 / (double)channel_count;
     // range of frames that fit in this pixel
     int frame_index = buffer_frame_count;
     for (x = 0; x < image_width; ++x) {
