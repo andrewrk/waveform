@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "fast waveform generation",
   "main": "./index",
-  "bin": "./bin/waveform",
   "scripts": {
     "postinstall": "mkdir -p bin && cp build/Release/waveform* bin/waveform"
   },
