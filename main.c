@@ -1,11 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sox.h>
+#include <groove/groove.h>
 #include <png.h>
 #include <limits.h>
 
-int printUsage(const char * exe) {
+static float min_sample = 1.0f;
+static float max_sample = -1.0f;
+static int image_bound_y;
+static int x = 0;
+static png_bytep *row_pointers;
+static png_byte color_bg[4] = {0, 0, 0, 0};
+static png_byte color_center[4] = {0, 0, 0, 255};
+static png_byte color_outer[4] = {0, 0, 0, 255};
+static png_bytep color_at_pix;
+static int image_width = 256;
+static int image_height = 64;
+static int frames_per_pixel;
+static int frames_until_emit;
+
+static int printUsage(const char * exe) {
     fprintf(stderr, "\
 \n\
 Usage:\n\
@@ -23,7 +37,7 @@ Usage:\n\
     return 1;
 }
 
-void parseColor(const char * hex_str, png_bytep color) {
+static void parseColor(const char * hex_str, png_bytep color) {
     unsigned long value = strtoul(hex_str, NULL, 16);
     color[3] = value & 0xff; value >>= 8;
     color[2] = value & 0xff; value >>= 8;
@@ -31,17 +45,43 @@ void parseColor(const char * hex_str, png_bytep color) {
     color[0] = value & 0xff;
 }
 
+static int double_ceil(double x) {
+    int n = x;
+    return (x == (double)n) ? n : n + 1;
+}
+
+static void emit_column() {
+    // translate into y pixel coord.
+    int y_min = (min_sample + 1.0f) / 2.0f * image_bound_y;
+    int y_max = (max_sample + 1.0f) / 2.0f * image_bound_y;
+
+    int y = 0;
+    int four_x = 4 * x;
+
+    // top bg 
+    for (; y < y_min; ++y) {
+        memcpy(row_pointers[y] + four_x, color_bg, 4);
+    }
+    // top and bottom wave
+    for (; y <= y_max; ++y) {
+        memcpy(row_pointers[y] + four_x, color_at_pix + 4*y, 4);
+    }
+    // bottom bg
+    for (; y < image_height; ++y) {
+        memcpy(row_pointers[y] + four_x, color_bg, 4);
+    }
+
+    x += 1;
+    frames_until_emit = frames_per_pixel;
+    max_sample = -1.0f;
+    min_sample = 1.0f;
+}
+
 int main(int argc, char * argv[]) {
     char * exe = argv[0];
-    long image_width = 256;
-    long image_height = 64;
 
     char * in_file_path = NULL;
     char * out_file_path = NULL;
-
-    png_byte color_bg[4] = {0, 0, 0, 0};
-    png_byte color_center[4] = {0, 0, 0, 255};
-    png_byte color_outer[4] = {0, 0, 0, 255};
 
     // parse params
     int i;
@@ -62,9 +102,9 @@ int main(int argc, char * argv[]) {
             if (i + 1 >= argc)
                 return printUsage(exe);
             if (strcmp(arg_name, "width") == 0) {
-                image_width = atol(argv[++i]);
+                image_width = atoi(argv[++i]);
             } else if (strcmp(arg_name, "height") == 0) {
-                image_height = atol(argv[++i]);
+                image_height = atoi(argv[++i]);
             } else if (strcmp(arg_name, "color-bg") == 0) {
                 parseColor(argv[++i], color_bg);
             } else if (strcmp(arg_name, "color-center") == 0) {
@@ -83,43 +123,39 @@ int main(int argc, char * argv[]) {
         return printUsage(exe);
     }
 
-    sox_format_init();
-    sox_format_t * input = sox_open_read(in_file_path, NULL, NULL, NULL);
-    if (! input) {
-        fprintf(stderr, "Unrecognized audio format for input file: %s\n", in_file_path);
+    groove_init();
+    atexit(groove_finish);
+
+    struct GrooveFile *file = groove_file_open(in_file_path);
+    if (! file) {
+        fprintf(stderr, "Error opening input file: %s\n", in_file_path);
         return 1;
     }
-    int channel_count = input->signal.channels;
-    int frame_count = input->signal.length;
+    struct GroovePlaylist *playlist = groove_playlist_create();
 
-    // allocate memory to read from library
-    const int buffer_frame_count = 2048;
-    size_t frames_size = sizeof(sox_sample_t) * channel_count * buffer_frame_count;
-    sox_sample_t * frames = (sox_sample_t *) malloc(frames_size);
-    if (! frames) {
-        fprintf(stderr, "Out of memory.");
+    struct GrooveSink *sink = groove_sink_create();
+    sink->audio_format.sample_rate = 44100;
+    sink->audio_format.channel_layout = GROOVE_CH_LAYOUT_MONO;
+    sink->audio_format.sample_fmt = GROOVE_SAMPLE_FMT_FLT;
+
+    if (groove_sink_attach(sink, playlist) < 0) {
+        fprintf(stderr, "error attaching sink\n");
         return 1;
     }
 
-    if (frame_count == 0) {
-        // scan for the duration
-        sox_format_t * input2 = sox_open_read(in_file_path, NULL, NULL, NULL);
-        if (! input2) {
-            fprintf(stderr, "Had to open the file twice to scan duration, but it didn't work the second time.\n");
-            return 1;
-        }
-        size_t count = buffer_frame_count;
-        while (count == buffer_frame_count) {
-            count = sox_read(input2, frames, buffer_frame_count);
-            frame_count += count;
-        }
-        sox_close(input2);
-        fprintf(stderr, "Warning: Had to scan for frame count. Found %i frames.\n", frame_count);
-    }
+    groove_playlist_insert(playlist, file, 1.0, NULL);
 
-    long long sample_range = (long long) SOX_SAMPLE_MAX - (long long) SOX_SAMPLE_MIN;
+    struct GrooveBuffer *buffer;
+
+    float duration = groove_file_duration(file);
+    int frame_count = double_ceil(duration * 44100.0);
+    frames_per_pixel = frame_count / image_width;
+    if (frames_per_pixel < 1) frames_per_pixel = 1;
 
     int center_y = image_height / 2;
+
+    frames_until_emit = frames_per_pixel;
+
 
     FILE * png_file;
     if (strcmp(out_file_path, "-") == 0) {
@@ -154,22 +190,18 @@ int main(int argc, char * argv[]) {
 
     png_write_info(png, png_info);
 
-    int frames_per_pixel = frame_count / image_width;
-    int frames_times_channels = frames_per_pixel * channel_count;
-
-
     // allocate memory to write to png file
-    png_bytep * row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * image_height);
+    row_pointers = (png_bytep *) malloc(sizeof(png_bytep) * image_height);
 
     if (! row_pointers) {
-        fprintf(stderr, "Out of memory.");
+        fprintf(stderr, "Out of memory.\n");
         return 1;
     }
 
-    png_bytep color_at_pix = (png_bytep) malloc(sizeof(png_byte) * image_height * 4);
+    color_at_pix = (png_bytep) malloc(sizeof(png_byte) * image_height * 4);
 
     if (! color_at_pix) {
-        fprintf(stderr, "Out of memory.");
+        fprintf(stderr, "Out of memory.\n");
         return 1;
     }
 
@@ -178,7 +210,7 @@ int main(int argc, char * argv[]) {
     for (y = 0; y < image_height; ++y) {
         png_bytep row = (png_bytep) malloc(image_width * 4);
         if (! row) {
-            fprintf(stderr, "Out of memory.");
+            fprintf(stderr, "Out of memory.\n");
             return 1;
         }
         row_pointers[y] = row;
@@ -191,64 +223,39 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    // for each pixel
-    int image_bound_y = image_height - 1;
-    int x;
-    double channel_count_mult = 1 / (double)channel_count;
-    // range of frames that fit in this pixel
-    int frame_index = buffer_frame_count;
-    for (x = 0; x < image_width; ++x) {
-        // get the min and max of this range
-        long long min = SOX_SAMPLE_MAX;
-        long long max = SOX_SAMPLE_MIN;
-
-        // for each frame from start to end
-        int i;
-        for (i = 0; i < frames_times_channels; i += channel_count) {
-            if (++frame_index >= buffer_frame_count) {
-                sox_read(input, frames, buffer_frame_count);
-                frame_index = 0;
+    image_bound_y = image_height - 1;
+    while (groove_sink_buffer_get(sink, &buffer, 1) == GROOVE_BUFFER_YES) {
+        // process the buffer
+        for (i = 0; i < buffer->frame_count && x < image_width;
+                i += 1, frames_until_emit -= 1)
+        {
+            if (frames_until_emit == 0) {
+                emit_column();
             }
-
-            // average the channels
-            long long value = 0;
-            int c;
-            for (c = 0; c < channel_count; ++c) {
-                value += frames[frame_index + c] * channel_count_mult;
-            }
-
-            // keep track of max/min
-            if (value < min) min = value;
-            if (value > max) max = value;
+            float *samples = (float *) buffer->data[0];
+            float sample = samples[i];
+            if (sample > max_sample) max_sample = sample;
+            if (sample < min_sample) min_sample = sample;
         }
-        // translate into y pixel coord.
-        int y_min = (min - SOX_SAMPLE_MIN) * image_bound_y / sample_range;
-        int y_max = (max - SOX_SAMPLE_MIN) * image_bound_y / sample_range;
 
-        int y = 0;
-        int four_x = 4 * x;
+        groove_buffer_unref(buffer);
+    }
 
-        // top bg 
-        for (; y < y_min; ++y) {
-            memcpy(row_pointers[y] + four_x, color_bg, 4);
-        }
-        // top and bottom wave
-        for (; y <= y_max; ++y) {
-            memcpy(row_pointers[y] + four_x, color_at_pix + 4*y, 4);
-        }
-        // bottom bg
-        for (; y < image_height; ++y) {
-            memcpy(row_pointers[y] + four_x, color_bg, 4);
-        }
+    if (x < image_width)  {
+        // emit the last column
+        emit_column();
     }
 
     png_write_image(png, row_pointers);
     png_write_end(png, png_info);
     fclose(png_file);
 
-    sox_close(input);
-    sox_format_quit();
+    groove_sink_detach(sink);
+    groove_sink_destroy(sink);
 
-    // let the OS free up the memory that we allocated
+    groove_playlist_clear(playlist);
+    groove_file_close(file);
+    groove_playlist_destroy(playlist);
+
     return 0;
 }

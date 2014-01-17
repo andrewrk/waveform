@@ -36,22 +36,10 @@ https://github.com/polem/WaveformGenerator
 
 ## Dependencies:
 
- * libsox
+ * [libgroove](https://github.com/superjoe30/libgroove)
  * libpng
  * zlib
 
 ## Compile:
 
-    gcc -o waveform main.c -O3 -lsox -lz -lpng
-
-## Compile on osx using macport:
-
- 1. install depedencies:
-
-        sudo port install sox
-        sudo port install libpng
-        sudo port install zlib
-
- 2. run compiler:
-
-        gcc -o waveform main.c -O3 -lsox -lz -lpng -I/opt/local/include -L/opt/local/lib
+    gcc -o waveform main.c -O3 -lgroove -lz -lpng

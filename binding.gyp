@@ -7,7 +7,7 @@
         "-O3"
       ],
       "libraries": [
-        "-lsox",
+        "-lgroove",
         "-lz",
         "-lpng"
       ],
