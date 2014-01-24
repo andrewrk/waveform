@@ -36,7 +36,7 @@ https://github.com/polem/WaveformGenerator
 
 ## Dependencies:
 
- * [libgroove](https://github.com/superjoe30/libgroove)
+ * [libgroove](https://github.com/andrewrk/libgroove)
  * libpng
  * zlib
 
