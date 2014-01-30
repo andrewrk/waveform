@@ -241,8 +241,9 @@ int main(int argc, char * argv[]) {
         groove_buffer_unref(buffer);
     }
 
-    if (x < image_width)  {
-        // emit the last column
+    // emit the last column if necessary. This will have to run multiple times
+    // if the duration specified in the metadata is incorrect.
+    while (x < image_width) {
         emit_column();
     }
 
