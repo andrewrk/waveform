@@ -1,26 +1,29 @@
-var execFile, waveform_bin, path;
+var path = require('path');
+var execFile = require('child_process').execFile;
+var waveformBin = path.resolve(__dirname, "bin", "waveform");
 
-path = require('path');
-
-execFile = require('child_process').execFile;
-waveform_bin = path.resolve(__dirname, "bin", "waveform");
+var argNames = [ 'width', 'height', 'color-bg', 'color-center', 'color-outer' ];
+var flagNames = [ 'scan' ];
 
 module.exports = function(audiofile, pngfile, options, callback) {
-  var cmdline, value, opt;
-
-  cmdline = [audiofile, pngfile];
-  for (opt in options) {
-    if (options.hasOwnProperty(opt)) {
-      value = options[opt];
-      cmdline.push('--' + opt);
-      cmdline.push(value);
-    }
-  }
+  var cmdline = [audiofile, pngfile];
+  argNames.forEach(function(argName) {
+      if (options.hasOwnProperty(argName)) {
+          var value = options[argName];
+          cmdline.push('--' + argName);
+          cmdline.push(value);
+      }
+  });
+  flagNames.forEach(function(flagName) {
+      if (options[flagName]) {
+          cmdline.push('--' + flagName);
+      }
+  });
   
-  execFile(waveform_bin, cmdline, function(err, stdout, stderr) {
+  execFile(waveformBin, cmdline, function(err, stdout, stderr) {
     var myErr;
     if (err) {
-      myErr = new Error("waveform binary returned error"); 
+      myErr = new Error("waveform binary returned error");
       myErr.stdout = stdout;
       myErr.stderr = stderr;
       myErr.internal = err;

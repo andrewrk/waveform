@@ -32,6 +32,7 @@ Usage:\n\
     --color-bg 00000000         bg color, rrggbbaa\n\
     --color-center 000000ff     gradient center color, rrggbbaa\n\
     --color-outer 000000ff      gradient outer color, rrggbbaa\n\
+    --scan                      duration scan (default off)\n\
 \n\
 ");
     return 1;
@@ -82,6 +83,7 @@ int main(int argc, char * argv[]) {
 
     char * in_file_path = NULL;
     char * out_file_path = NULL;
+    char scan = 0;
 
     // parse params
     int i;
@@ -98,10 +100,12 @@ int main(int argc, char * argv[]) {
         } else {
             char * arg_name = argv[i] + 2;
 
-            // args that take 1 parameter
-            if (i + 1 >= argc)
+            if (strcmp(arg_name, "scan") == 0) {
+                scan = 1;
+            } else if (i + 1 >= argc) {
+                // args that take 1 parameter
                 return printUsage(exe);
-            if (strcmp(arg_name, "width") == 0) {
+            } else if (strcmp(arg_name, "width") == 0) {
                 image_width = atoi(argv[++i]);
             } else if (strcmp(arg_name, "height") == 0) {
                 image_height = atoi(argv[++i]);
@@ -143,12 +147,28 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-    groove_playlist_insert(playlist, file, 1.0, NULL);
+    struct GroovePlaylistItem *item =
+        groove_playlist_insert(playlist, file, 1.0, NULL);
 
     struct GrooveBuffer *buffer;
 
-    float duration = groove_file_duration(file);
-    int frame_count = double_ceil(duration * 44100.0);
+    int frame_count;
+
+
+    // scan the song for the exact correct duration
+    if (scan) {
+        frame_count = 0;
+        while (groove_sink_buffer_get(sink, &buffer, 1) == GROOVE_BUFFER_YES) {
+            frame_count += buffer->frame_count;
+            groove_buffer_unref(buffer);
+        }
+        groove_playlist_seek(playlist, item, 0);
+    } else {
+        float duration = groove_file_duration(file);
+        frame_count = double_ceil(duration * 44100.0);
+    }
+
+
     frames_per_pixel = frame_count / image_width;
     if (frames_per_pixel < 1) frames_per_pixel = 1;
 
