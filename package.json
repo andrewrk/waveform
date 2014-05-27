@@ -1,6 +1,6 @@
 {
   "name": "waveform",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "fast waveform generation",
   "main": "./index",
   "scripts": {
