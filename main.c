@@ -53,6 +53,8 @@ static int double_ceil(double x) {
 
 static void emit_column() {
     // translate into y pixel coord.
+    max_sample = (max_sample > 1.0f) ? 1.0f : max_sample;
+    min_sample = (min_sample < -1.0f) ? -1.0f : min_sample;
     int y_min = (min_sample + 1.0f) / 2.0f * image_bound_y;
     int y_max = (max_sample + 1.0f) / 2.0f * image_bound_y;
 
@@ -148,7 +150,7 @@ int main(int argc, char * argv[]) {
     }
 
     struct GroovePlaylistItem *item =
-        groove_playlist_insert(playlist, file, 1.0, NULL);
+        groove_playlist_insert(playlist, file, 1.0, 1.0, NULL);
 
     struct GrooveBuffer *buffer;
 
