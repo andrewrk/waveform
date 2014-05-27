@@ -30,10 +30,6 @@ generateWaveform(audiofile, pngfile, {
 });
 ```
 
-## PHP Usage:
-
-https://github.com/polem/WaveformGenerator
-
 ## Dependencies:
 
  * [libgroove](https://github.com/andrewrk/libgroove)
@@ -43,3 +39,9 @@ https://github.com/polem/WaveformGenerator
 ## Compile:
 
     gcc -o waveform main.c -O3 -lgroove -lz -lpng
+
+## Related Projects
+
+ * [PHP Wrapper Script](https://github.com/polem/WaveformGenerator)
+ * [Native Interface for Go](https://github.com/dz0ny/podcaster/blob/master/utils/waveform.go)
+
