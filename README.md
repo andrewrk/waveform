@@ -12,6 +12,7 @@
     --color-bg 00000000         bg color, rrggbbaa
     --color-center 000000ff     gradient center color, rrggbbaa
     --color-outer 000000ff      gradient outer color, rrggbbaa
+    --scan                      duration scan (default off)
 
     Substitute '-' for a filename to use stdio.
 
@@ -25,6 +26,7 @@ generateWaveform(audiofile, pngfile, {
     'color-bg': '00000000',    // bg color, rrggbbaa
     'color-center': '000000ff',// gradient center color, rrggbbaa
     'color-outer': '000000ff', // gradient outer color, rrggbbaa
+    'scan': false,             // whether to do a pass to detect duration
 }, function(err) {
     // done generating waveform
 });
