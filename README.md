@@ -40,7 +40,7 @@ generateWaveform(audiofile, pngfile, {
 
 ## Compile:
 
-    gcc -o waveform main.c -O3 -lgroove -lz -lpng
+    make
 
 ## Related Projects
 

@@ -12,7 +12,7 @@
         "-lpng"
       ],
       "sources": [
-        "main.c"
+        "waveform.c"
       ],
       "conditions": [
         ['OS=="mac"', {
