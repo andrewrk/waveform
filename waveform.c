@@ -61,7 +61,7 @@ static void emit_column() {
     int y = 0;
     int four_x = 4 * x;
 
-    // top bg 
+    // top bg
     for (; y < y_min; ++y) {
         memcpy(row_pointers[y] + four_x, color_bg, 4);
     }

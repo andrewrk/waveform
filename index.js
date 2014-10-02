@@ -19,7 +19,7 @@ module.exports = function(audiofile, pngfile, options, callback) {
           cmdline.push('--' + flagName);
       }
   });
-  
+
   execFile(waveformBin, cmdline, function(err, stdout, stderr) {
     var myErr;
     if (err) {
