@@ -29,7 +29,7 @@ static FILE *transcode_out_f = NULL;
 static struct GrooveEncoder *encoder = NULL;
 
 static int version() {
-    printf("1.0.4\n");
+    printf("2.0.0\n");
     return 0;
 }
 
