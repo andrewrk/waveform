@@ -28,6 +28,11 @@ static int png_frames_until_emit;
 static FILE *transcode_out_f = NULL;
 static struct GrooveEncoder *encoder = NULL;
 
+static int version() {
+    printf("1.0.4\n");
+    return 0;
+}
+
 static int usage(const char *exe) {
     fprintf(stderr, "\
 \n\
@@ -154,6 +159,8 @@ int main(int argc, char * argv[]) {
                 scan = 1;
             } else if (strcmp(arg, "wjs-plain") == 0) {
                 wjs_plain = 1;
+            } else if (strcmp(arg, "version") == 0) {
+                return version();
             } else if (i + 1 >= argc) {
                 // args that take 1 parameter
                 return usage(exe);
